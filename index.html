@@ -7,7 +7,7 @@
 		<title>reveal.js</title>
 
 		<link rel="stylesheet" href="css/reveal.css">
-		<link rel="stylesheet" href="css/theme/black.css">
+		<link rel="stylesheet" href="css/theme/white.css">
 
 		<!-- Theme used for syntax highlighting of code -->
 		<link rel="stylesheet" href="lib/css/zenburn.css">
@@ -24,13 +24,20 @@
 	<body>
 		<div class="reveal">
 			<div class="slides">
-				<section>Slide 1</section>
-				<section>Slide 2</section>
+				<section data-markdown="markdown/slides.md"
+ 						 data-separator="^\n---\n$"
+                         data-separator-vertical="^\n--\n$"
+ 						 data-notes="^Note:"
+ 			        	 data-charset="utf-8">
+				</section>
 			</div>
 		</div>
 
+		<!-- <script src="https://sverweij.github.io/mscgen_js/mscgen-inpage.js" defer></script> -->
+
 		<script src="lib/js/head.min.js"></script>
 		<script src="js/reveal.js"></script>
+		<script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
 
 		<script>
 			// More info about config & dependencies:
@@ -44,6 +51,81 @@
 					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
 				]
 			});
+			Reveal.addEventListener( 'ready', function( event ) {
+				$.ajax({
+					url: "https://sverweij.github.io/mscgen_js/mscgen-inpage.js",
+					dataType: "script"
+				});
+			});
+		</script>
+		<style type="text/css">
+			#footer-left {
+				position: absolute;
+				bottom: 0%;
+				left: 0.5%;
+			}
+
+			.left {
+				left:-8.33%;
+				text-align: left;
+				float: left;
+				width:50%;
+				z-index:-10;
+			}
+
+			.right {
+				left:31.25%;
+				top: 75px;
+				float: right;
+				text-align: right;
+				z-index:-10;
+				width:50%;
+			}
+
+			.left2 {
+				left:-8.33%;
+				text-align: left;
+				float: left;
+				width:40%;
+				z-index:-10;
+			}
+
+			.right3 {
+				left:31.25%;
+				top: 75px;
+				float: right;
+				text-align: right;
+				z-index:-10;
+				width:60%;
+			}
+
+			.it {
+				margin-bottom: 20px !important;
+			}
+
+			.s {
+				font-size: 80% !important;
+			}
+		</style>
+
+		<!-- 2. Create hidden header/footer <div> -->
+		<div id="hidden" style="display:none;">
+			<div id="header">
+				<div id="footer-left"><img alt="suse logo black" width="5%" src="images/suse-black.png"></div>
+			</div>
+		</div>
+
+		<script type="text/javascript">
+			// 3. On Reveal.js ready event, copy header/footer <div> into each `.slide-background` <div>
+			var header = $('#header').html();
+			if ( window.location.search.match( /print-pdf/gi ) ) {
+				Reveal.addEventListener( 'ready', function( event ) {
+					$('.slide-background').append(header);
+				});
+			}
+			else {
+				$('div.reveal').append(header);
+		   }
 		</script>
 	</body>
 </html>
