@@ -10,10 +10,9 @@
 <hr>
 
 * <p>What is the Ceph messenger</p>
+* <p>Messenger API</p>
 * <p>Messenger V1 Limitations</p>
 * <p>Messenger V2 Protocol</p>
-* <p>Messenger Architecture</p>
-* <p>Messenger V2 Features</p>
 
 ---
 
@@ -22,8 +21,10 @@
 
 * <p>It's a wire-protocol specification;</p> <!-- .element: class="fragment" data-fragment-index="1" -->
 * <p>and also, the corresponding software implementation</p> <!-- .element: class="fragment" data-fragment-index="2" -->
+* <p>Invisible to end-users</p> <!-- .element: class="fragment" data-fragment-index="3" -->
+  * <p class="it">Unless when it's not working properly</p> <!-- .element: class="fragment" data-fragment-index="4" -->
 
-<div style="color: red; margin-top: 50px;"> <!-- .element: class="fragment" data-fragment-index="3" -->
+<div style="color: red; margin-top: 50px;"> <!-- .element: class="fragment" data-fragment-index="5" -->
 <p>The messenger knows nothing about the Ceph distributed algorithms  and specific daemons protocols</p>
 </div>
 
@@ -61,8 +62,8 @@
         <li>Abstracts the technology of the physical connection used between machines</li> <!-- .element: class="fragment" data-fragment-index="1" -->
         <ul>
             <li>Posix Sockets</li> <!-- .element: class="fragment" data-fragment-index="1" -->
-            <li>RDMA (not tested)</li> <!-- .element: class="fragment" data-fragment-index="1" -->
-            <li>DPDK (not tested)</li> <!-- .element: class="fragment" data-fragment-index="1" -->
+            <li>RDMA</li> <!-- .element: class="fragment" data-fragment-index="1" -->
+            <li>DPDK</li> <!-- .element: class="fragment" data-fragment-index="1" -->
         </ul>
         <li style="margin-top: 20px;">Reliable delivery of messages with "exactly-once" semantics</li> <!-- .element: class="fragment" data-fragment-index="2" -->
         <li style="margin-top: 20px;">Automatic handling of temporary connection failures</li> <!-- .element: class="fragment" data-fragment-index="3" -->
@@ -251,6 +252,13 @@ while (dispatcher->received < 1000) {
         <li style="margin-bottom: 20px;">No extensability at an early stage of the protocol</li> <!-- .element: class="fragment" data-fragment-index="2" -->
         <li style="margin-bottom: 20px;">No data authenticity supported</li> <!-- .element: class="fragment" data-fragment-index="3" -->
         <li style="margin-bottom: 20px;">No data encryption supported</li> <!-- .element: class="fragment" data-fragment-index="4" -->
+        <li style="margin-bottom: 20px;">Limited support for different authentication protocols</li> <!-- .element: class="fragment" data-fragment-index="5" -->
+        <li style="margin-bottom: 20px;">No strict structure for protocol internal messages</li> <!-- .element: class="fragment" data-fragment-index="6" -->
+  <!--  <li>Code maintainability problems</li>
+        <ul>
+            <li>Old code with many iterations from the original</li>
+            <li>Protocol code mixed with connection handling code</li>
+        </ul> -->
     <ul>
 </div>
 
@@ -285,8 +293,9 @@ while (dispatcher->received < 1000) {
         <ul>
             <li>A different path can be taken in a very early stage of the protocol</li> <!-- .element: class="fragment" data-fragment-index="6" -->
         </ul>
-        <li style="margin-top: 20px;">Encryption-on-the-wire support</li> <!-- .element: class="fragment" data-fragment-index="7" -->
-        <li style="margin-top: 20px;">Specification draft: http://docs.ceph.com/docs/master/dev/msgr2/</li> <!-- .element: class="fragment" data-fragment-index="8" -->
+        <li style="margin-top: 20px;">No limitations on the authentication protocols used</li> <!-- .element: class="fragment" data-fragment-index="7" -->
+        <li style="margin-top: 20px;">Encryption-on-the-wire support</li> <!-- .element: class="fragment" data-fragment-index="8" -->
+        <!-- <li style="margin-top: 20px;">Specification draft: http://docs.ceph.com/docs/master/dev/msgr2/</li> -->
     </ul>
 </div>
 
@@ -322,11 +331,18 @@ while (dispatcher->received < 1000) {
 ### Message Frame
 <hr>
 
-<pre class="c" style="font-size=0.4em;"><code style="max-height: 500px;" data-trim data-noescape>
+<pre class="cpp" style="font-size=0.35em;"><code style="max-height: 500px;" data-trim data-noescape>
 struct frame {
+    uint32_t frame_len;           // 4 bytes
+    uint32_t tag;                 // 4 byts
+    char payload[frame_len - 4];
+};
+
+
+struct encrypted_frame {
     uint32_t frame_len;
     uint32_t tag;
-    char payload[frame_len - 4];
+    char encrypted_payload[frame_len - 4];
 };
 </code></pre>
 
@@ -353,7 +369,7 @@ struct frame {
     }
     </pre>
 </div>
-<div class="right3" style="font-size: 0.64em;">
+<div class="right3" style="font-size: 0.70em;">
 <pre class="c"><code data-trim data-noescape>
 struct banner_payload {
     uint64_t supported_features;
@@ -536,6 +552,25 @@ KEEPALIVE2_ACK 15 // keepalive 2 reply
 
 </code></pre>
 </div>
+
+---
+
+### Frame Integrity, Auhtenticity, and Confidentiality
+<hr>
+
+<ul>
+    <li class="it">Integrity:</li> <!-- .element: class="fragment" data-fragment-index="1" -->
+    <ul>
+        <li>CRC in frame header (length + tag)</li> <!-- .element: class="fragment" data-fragment-index="2" -->
+        <li>CRC in messages payload (same as in V1)</li> <!-- .element: class="fragment" data-fragment-index="3" -->
+    </ul>
+    <li class="it" style="margin-top: 30px;">Authenticity and Confidentiality:</li> <!-- .element: class="fragment" data-fragment-index="4" -->
+    <ul>
+        <li>Frame payload only</li> <!-- .element: class="fragment" data-fragment-index="5" -->
+        <li>Authenticity with SHA256 HMAC</li> <!-- .element: class="fragment" data-fragment-index="6" -->
+        <li>Confidentiality with AES encryption</li> <!-- .element: class="fragment" data-fragment-index="7" -->
+    </ul>
+</ul>
 
 ---
 
