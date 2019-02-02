@@ -249,7 +249,7 @@ while (dispatcher->received < 1000) {
 <div style="font-size: 100%">
     <ul>
         <li style="margin-bottom: 20px;">The first wire-protocol of Ceph</li> <!-- .element: class="fragment" data-fragment-index="1" -->
-        <li style="margin-bottom: 20px;">No extensability at an early stage of the protocol</li> <!-- .element: class="fragment" data-fragment-index="2" -->
+        <li style="margin-bottom: 20px;">No extensibility at an early stage of the protocol</li> <!-- .element: class="fragment" data-fragment-index="2" -->
         <li style="margin-bottom: 20px;">No data authenticity supported</li> <!-- .element: class="fragment" data-fragment-index="3" -->
         <li style="margin-bottom: 20px;">No data encryption supported</li> <!-- .element: class="fragment" data-fragment-index="4" -->
         <li style="margin-bottom: 20px;">Limited support for different authentication protocols</li> <!-- .element: class="fragment" data-fragment-index="5" -->
@@ -320,8 +320,8 @@ while (dispatcher->received < 1000) {
         <ol>
             <li>Banner Exchange</li> <!-- .element: class="fragment" data-fragment-index="3" -->
             <li>Authentication</li> <!-- .element: class="fragment" data-fragment-index="4" -->
-            <li>Session Handshake</li> <!-- .element: class="fragment" data-fragment-index="4" -->
-            <li>Message Exchange</li> <!-- .element: class="fragment" data-fragment-index="5" -->
+            <li>Session Handshake</li> <!-- .element: class="fragment" data-fragment-index="5" -->
+            <li>Message Exchange</li> <!-- .element: class="fragment" data-fragment-index="6" -->
         </ol>
     </ul>
 </div>
@@ -352,9 +352,9 @@ struct encrypted_frame {
 <hr>
 
 <div class="left2">
-    <pre class="mscgen_js" style="box-shadow: none; width: 60%" >
+    <pre class="mscgen_js" style="box-shadow: none;" >
     msc {
-        arcgradient=20;
+        arcgradient=20, hscale=1.3;
         c [label="connector"], a [label="accepter"];
         c -- a [label="connection established", linecolor="transparent", textcolor="grey"];
 
@@ -369,12 +369,11 @@ struct encrypted_frame {
     }
     </pre>
 </div>
-<div class="right3" style="font-size: 0.70em;">
-<pre class="c"><code data-trim data-noescape>
+<div class="right3" style="font-size: 1em;">
+<pre style="max-height: 550px;" class="c"><code style="max-height: 550px;" data-trim data-noescape>
 struct banner_payload {
     uint64_t supported_features;
     uint64_t required_features;
-    entity_addr_t peer_address;
 }
 
 struct banner {
@@ -396,8 +395,9 @@ struct hello {
 <hr>
 
 <div class="left2">
-    <pre class="mscgen_js" style="box-shadow: none; width: 60%" >
+    <pre class="mscgen_js" style="box-shadow: none;" >
     msc {
+        hscale=1.3;
         c [label="connector"], a [label="accepter"];
         c => a [label="auth_request"];
         a => c [label="auth_bad_method", linecolor="red", textcolor="red"];
@@ -411,7 +411,7 @@ struct hello {
     }
     </pre>
 </div>
-<div class="right3" style="font-size: 0.7em;">
+<div class="right3" style="font-size: 0.75em;">
 <pre style="max-height: 550px;" class="c"><code style="max-height: 550px;" data-trim data-noescape>
 struct auth_request {
     uint32_t method;
@@ -448,16 +448,16 @@ struct auth_done {
 <hr>
 
 <div class="left2">
-    <pre class="mscgen_js" style="box-shadow: none; width: 60%" >
+    <pre class="mscgen_js" style="box-shadow: none" >
     msc {
-        wordwraparcs=on;
+        hscale=1.3, wordwraparcs=on;
         c [label="connector"], a [label="accepter"];
         c => a [label="client_ident"];
         a => c [label="server_ident"];
     }
     </pre>
 </div>
-<div class="right3" style="font-size: 0.7em;">
+<div class="right3" style="font-size: 0.8em;">
 <pre style="max-height: 550px;" class="c"><code style="max-height: 550px;" data-trim data-noescape>
 struct client_ident {
     entity_addrvec_t addrs;
@@ -487,16 +487,16 @@ struct server_ident {
 <hr>
 
 <div class="left2">
-    <pre class="mscgen_js" style="box-shadow: none; width: 60%" >
+    <pre class="mscgen_js" style="box-shadow: none;" >
     msc {
-        wordwraparcs=on;
+        hscale=1.3, wordwraparcs=on;
         c [label="connector"], a [label="accepter"];
         c => a [label="reconnect"];
         a => c [label="reconnect_ok"];
     }
     </pre>
 </div>
-<div class="right3" style="font-size: 0.7em;">
+<div class="right3" style="font-size: 0.8em;">
 <pre style="max-height: 550px;" class="c"><code style="max-height: 550px;" data-trim data-noescape>
 struct reconnect {
     entity_addrvec_t addrs;
@@ -519,9 +519,9 @@ struct reconnect_ok {
 <hr>
 
 <div class="left2">
-    <pre class="mscgen_js" style="box-shadow: none; width: 60%" >
+    <pre class="mscgen_js" style="box-shadow: none;" >
     msc {
-        arcgradient=20;
+        arcgradient=20, hscale=1.3;
         c [label="connector"], a [label="accepter"];
         --- [label="session establishment", linecolor="gray", textcolor="grey"];
 
@@ -535,11 +535,12 @@ struct reconnect_ok {
     }
     </pre>
 </div>
-<div class="right3" style="font-size: 0.60em;">
-<pre class="c"><code style="max-height: 500px;" data-trim data-noescape>
+<div class="right3" style="font-size: 0.75em;">
+<pre class="c"><code style="max-height: 550px;" data-trim data-noescape>
 struct message {
     __u8 tag;
-    ceph_msg_header2 header;  // includes last seen msg seq
+    // includes last seen msg seq
+    ceph_msg_header2 header;
     char payload[front_len + middle_len]
 };
 
