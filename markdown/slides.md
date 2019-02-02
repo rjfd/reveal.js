@@ -59,7 +59,7 @@
 
 <div style="font-size: 100%">
     <ul>
-        <li>Abstracts the technology of the physical connection used between machines</li> <!-- .element: class="fragment" data-fragment-index="1" -->
+        <li>Abstracts the transport protocol of the physical connection used between machines</li> <!-- .element: class="fragment" data-fragment-index="1" -->
         <ul>
             <li>Posix Sockets</li> <!-- .element: class="fragment" data-fragment-index="1" -->
             <li>RDMA</li> <!-- .element: class="fragment" data-fragment-index="1" -->
@@ -131,115 +131,6 @@ class Dispatcher {
     bool ms_handle_authentication(Connection *con);
 };
 </code></pre>
-
---
-
-### Ceph Messenger API
-<hr>
-
-<pre style="max-height: 500px; font-size: 0.4em;" class="cpp">
-<code style="max-height: 500px;" data-trim data-noescape>
-class Policy {
-  // If true, the Connection is tossed out on errors.
-  bool lossy;
-  // If true, the underlying connection can't be re-established from this end.
-  bool server;
-  // If true, we will standby when idle
-  bool standby;
-  // If true, we will try to detect session resets
-  bool resetcheck;
-
-  // stateful server:     Policy(false, true, true, true)
-  // stateless_server:    Policy(true, true, false, false)
-  // lossless_peer:       Policy(false, false, true, false)
-  // lossless_peer_reuse: Policy(false, false, true, true)
-  // lossy_client:        Policy(true, false, false, false)
-  // lossless_client:     Policy(false, false, false, true)
-  }
-};
-</code></pre>
-
---
-
-### Ceph Messenger API - Example
-<hr>
-
-<div class="left">
-<pre style="max-height: 550px; font-size: 0.3em;" class="cpp">
-<code style="max-height: 510px; width: 102%;" data-trim data-noescape>
-
-class SimpleDispatcher : public Dispatcher {
-    int received = 0;
-    bool ms_dispatch(Message \*m) override {
-        if (m->get_type() == MSG_PING) {
-            Connection \*con = m->get_connection();
-            con->send_message(new MPong());
-        } else if (m->get_type() == MSG_PONG) {
-            received++;
-        }
-    }
-}
-
-entity_addr_t bind_addr;
-entity_addr_from_url(&bind_addr, "tcp://0.0.0.0:4321");
-
-Messenger \*messenger;
-messenger = Messenger::create(g_ceph_context,
-                              "async+posix",
-                              entity_name_t::MON(-1),
-                              "simple_server", 0, 0);
-
-messenger->set_default_policy(
-    Messenger::Policy::stateless_server(0));
-
-if ((r = messenger->bind(bind_addr))) {
-    exit(r);
-}
-
-Dispatcher \*dispatcher = new SimpleDispatcher(messenger);
-messenger->add_dispatcher_head(dispatcher);
-messenger->start();
-messenger->wait();
-
-</code></pre>
-</div>
-
-<div class="right">
-<pre style="max-height: 550px; font-size: 0.3em;" class="cpp">
-<code style="max-height: 510px; width: 102%;" data-trim data-noescape>
-Messenger \*messenger;
-messenger = Messenger::create(g_ceph_context,
-                              "async+posix",
-                              entity_name_t::MON(-1),
-                              "client", getpid(), 0);
-
-messenger->set_default_policy(
-    Messenger::Policy::lossy_client(0));
-
-entity_inst_t dest;
-dest.name = entity_name_t::MON(-1);
-entity_addr_from_url(&dest.addr, "tcp://localhost:4321");
-
-Dispatcher \*dispatcher = new SimpleDispatcher(messenger);
-messenger->add_dispatcher_head(dispatcher);
-
-if ((r = messenger->start())) {
-    exit(r);
-}
-
-Connection *conn;
-conn = messenger->get_connection(dest);
-
-for (int i = 0; i < 1000; ++i) {
-    // asynchronous call
-    conn->send_message(new MPing());
-}
-
-while (dispatcher->received < 1000) {
-    // sleep a bit
-}
-</code></pre>
-</div>
 
 ---
 
@@ -318,10 +209,10 @@ while (dispatcher->received < 1000) {
     <ul>
         <li>Phases</li> <!-- .element: class="fragment" data-fragment-index="2" -->
         <ol>
-            <li>Banner Exchange</li> <!-- .element: class="fragment" data-fragment-index="3" -->
-            <li>Authentication</li> <!-- .element: class="fragment" data-fragment-index="4" -->
-            <li>Session Handshake</li> <!-- .element: class="fragment" data-fragment-index="5" -->
-            <li>Message Exchange</li> <!-- .element: class="fragment" data-fragment-index="6" -->
+            <li>Banner Exchange</li> <!-- .element: class="fragment" data-fragment-index="2" -->
+            <li>Authentication</li> <!-- .element: class="fragment" data-fragment-index="2" -->
+            <li>Session Handshake</li> <!-- .element: class="fragment" data-fragment-index="2" -->
+            <li>Message Exchange</li> <!-- .element: class="fragment" data-fragment-index="2" -->
         </ol>
     </ul>
 </div>
@@ -371,16 +262,16 @@ struct encrypted_frame {
 </div>
 <div class="right3" style="font-size: 1em;">
 <pre style="max-height: 550px;" class="c"><code style="max-height: 550px;" data-trim data-noescape>
+struct banner {
+    char banner[8]; // "ceph v2\n"
+    uint16_t payload_len; 
+    struct banner_payload pyload;
+};
+
 struct banner_payload {
     uint64_t supported_features;
     uint64_t required_features;
 }
-
-struct banner {
-    char banner[8]; // "ceph v2\n"
-    uint64_t payload_len; 
-    struct banner_payload pyload;
-};
 
 struct hello {
     uint8_t entity_type;
@@ -575,17 +466,23 @@ KEEPALIVE2_ACK 15 // keepalive 2 reply
 
 ---
 
-### Messenger Implementation
+### Where can I find the code?
 <hr>
 
 <ul>
-    <li class="it">Source code location: `src/msg`</li> <!-- .element: class="fragment" data-fragment-index="1" -->
-    <li style="margin-top: 20px !important;">Two implementations</li> <!-- .element: class="fragment" data-fragment-index="2" -->
-    <ul>
-        <li>Simple messenger: `src/msg/simple`</li> <!-- .element: class="fragment" data-fragment-index="3" -->
-        <li class="it">Asynchronous messenger: `src/msg/async`</li> <!-- .element: class="fragment" data-fragment-index="4" -->
-    </ul>
-    <li style="margin-top: 20px !important;">V2 Protocol only available in async messenger</li> <!-- .element: class="fragment" data-fragment-index="5" -->
+    <li class="it">Source code location: <br>`src/msg/async/ProtocolV2.cc`</li> <!-- .element: class="fragment" data-fragment-index="1" -->
+    <li style="margin-top: 40px !important;">Specificaton draft: `http://docs.ceph.com/docs/master/dev/msgr2/`</li> <!-- .element: class="fragment" data-fragment-index="5" -->
+</ul>
+
+---
+
+### Future Features
+<hr>
+
+<ul>
+    <li>More authentication protocols: Kerberos, ...</li> <!-- .element: class="fragment" data-fragment-index="1" -->
+    <li style="margin-top: 40px;">Connection multiplexing</li> <!-- .element: class="fragment" data-fragment-index="2" -->
+    <li style="margin-top: 40px;">New ideas and contributions are welcome</li> <!-- .element: class="fragment" data-fragment-index="3" -->
 </ul>
 
 ---
